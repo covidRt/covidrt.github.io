@@ -9,11 +9,11 @@
   <body>
 
     <p><font size="80px">
-      20200831時点<br>
+      20200901時点<br>
       カリフォルニア州<br>
-      実行再生産数: 0.87<br>
-      新規感染者（7日間平均）：5,067人</font></p>
-
+      実行再生産数: 0.85<br>
+      新規感染者（7日間平均）：4,957</font></p>
+      
     <!-- <p id='date'>20200831</p>
     <p id='rt'>0.87</p>
     <p id='seveAve'>0.87</p> -->
@@ -66,6 +66,11 @@
     const Rt = sevenDaysAve / sum(arr);
     console.log(Rt)
 
+    console.log(`      
+      ${metaData[1].date}時点<br>
+      カリフォルニア州<br>
+      実行再生産数: ${Math.round(Rt * 100) /100}<br>
+      新規感染者（7日間平均）：${Math.round(result[0])}</font></p>`)
     // const pdate = document.getElementById("date");
     // pdate.textContent = `${metaData[1].date}`
 
@@ -86,4 +91,3 @@
   </script>
   </body>
   </html>
-
