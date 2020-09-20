@@ -2,8 +2,9 @@
   <html lang="en">
   <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>COVID Rt</title>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3"></script>
   </head>
   <body>
@@ -16,7 +17,6 @@
   <script>
   const endpoint = 'https://api.covidtracking.com/v1/states/ca/daily.json';
 
-  getData();
   const date = [];
   const dailyNewCases = [];
   const sevenDaysAve = [];
@@ -26,22 +26,33 @@
     0.037, 0.138, 0.160, 0.142, 0.117, 0.094, 0.075, 0.059, 0.047, 0.038, 0.031, 0.025, 0.021, 0.017
   ]
 
-
   chartIt();
+
+
 
   async function chartIt(){
         const ctx = document.getElementById('myChart').getContext('2d');
+        const sevenRt = await getData();
         const myChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: date,
                 datasets: [{
-                    label: '実行再生産数',
+                    label: '実行再生産数（右軸）',
                     data: Rt,
                     fill:false,
                     backgroundColor: 'rgba(255, 99, 132, 0.2)',
                     borderColor: 'rgba(255, 99, 132, 1)',
-                    borderWidth: 1
+                    borderWidth: 1,
+                    yAxisID: "y-axis-2"
+                },{
+                    label: '新規感染者（7日間平均）(左軸）',
+                    data: sevenDaysAve,
+                    fill:false,
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1,
+                    yAxisID: "y-axis-1"
                 }]
             },
             options: {
@@ -50,9 +61,26 @@
                 ticks: {
                     reverse: true
                 }
-            }]
-        }
-    }
+               }],
+               yAxes: [{
+                id: "y-axis-1",
+                position: "left",
+                ticks: {
+                max: 12000,
+                min: 0,
+                stepSize: 2000
+                }
+               },{
+                id: "y-axis-2",
+                position: "right",
+                ticks: {
+                max: 2.6,
+                min: 0.5,
+                stepSize: .5
+                }
+               }]
+              }
+            }
           });
       }
 
@@ -61,10 +89,10 @@
   async function getData(){
     const response = await fetch(endpoint);
     const json = await response.json();
-    for (let i = 0; i < 90; ++i){
+    for (let i = 0; i <180; ++i){
        date.push(json[i+1].date)
     }
-    for (let i = 0; i < 120; ++i){
+    for (let i = 0; i <200; ++i){
        dailyNewCases.push(json[i].positiveIncrease)
     }
     sevenD();
@@ -75,14 +103,14 @@
   
 
   function sevenD(){
-    for(let i = 0; i < 120; ++i){
+    for(let i = 0; i < 200; ++i){
       sevenDaysAve.push(
         (dailyNewCases.slice(i, i+7).reduce((acc, cur) => acc + cur)) / 7)
     }
   }
 
   function calculateErr(){
-    for(let i = 0; i < 120; ++i){
+    for(let i = 0; i < 200; ++i){
       let sevenSlice = sevenDaysAve.slice(i);
       const arr = [];
       for(let i =0; i<14; ++i){
@@ -93,7 +121,7 @@
   }}
 
   function calculateRt(){
-    for(let i = 0; i < 90; ++i){
+    for(let i = 0; i <180; ++i){
       Rt.push(Math.floor(sevenDaysAve[i]/sumFourtenn[i]*1000)/1000);
     }
   }
