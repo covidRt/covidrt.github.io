@@ -1,91 +1,112 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
   <html lang="en">
   <head>
     <meta charset="UTF-8">
     <title>COVID Rt</title>
-    <link rel="stylesheet" href="style.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3"></script>
   </head>
   <body>
 
-    <p><font size="80px">      
-      20200917時点<br>
-      カリフォルニア州<br>
-      実行再生産数: 0.97<br>
-      新規感染者（7日間平均）：3,334</font></p>
-    <!-- <p id='date'>20200831</p>
-    <p id='rt'>0.87</p>
-    <p id='seveAve'>0.87</p> -->
+    <p id=para><font size="80px"></font></p>
+    <canvas id="myChart" width="400" height="200"></canvas>
+
 
     
   <script>
   const endpoint = 'https://api.covidtracking.com/v1/states/ca/daily.json';
 
-  const metaData = [];
-  fetch(endpoint)
-    .then(blob => blob.json())
-    .then(data => metaData.push(...data));
-
-
-
-  const result = [];
-  const arr = [];
-  const senvenDaverage = []
+  getData();
+  const date = [];
+  const dailyNewCases = [];
+  const sevenDaysAve = [];
+  const sumFourtenn = [];
+  const Rt = [];
   const cummulateError = [
     0.037, 0.138, 0.160, 0.142, 0.117, 0.094, 0.075, 0.059, 0.047, 0.038, 0.031, 0.025, 0.021, 0.017
   ]
 
-  function fourteenDaysArray(metaData){
-    for(let i = 1; i < 15; ++i){
-      const foureteenDaysArr = Array.of(
-        metaData[i].positiveIncrease,
-        metaData[i+1].positiveIncrease,
-        metaData[i+2].positiveIncrease,
-        metaData[i+3].positiveIncrease,
-        metaData[i+4].positiveIncrease,
-        metaData[i+5].positiveIncrease,
-        metaData[i+6].positiveIncrease
-        ).reduce((acc, cur) => acc + cur) / 7;
-        result.push(foureteenDaysArr)
-    }
-    console.log(result)
-    for(let i =0; i<14; ++i){
-        const x = result[i] * cummulateError[i];
-        arr.push(x)
+
+  chartIt();
+
+  async function chartIt(){
+        const ctx = document.getElementById('myChart').getContext('2d');
+        const myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: date,
+                datasets: [{
+                    label: '実行再生産数',
+                    data: Rt,
+                    fill:false,
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+              scales: {
+               xAxes: [{
+                ticks: {
+                    reverse: true
+                }
+            }]
         }
-    console.log(arr)
-    const sum = function(arr){
-      return arr.reduce((acc, cur) => acc + cur)
     }
-    console.log(sum(arr))
-    
-    const sevenDaysAve = metaData.map(x =>  x.positiveIncrease).splice(0,7).reduce((acc, cur) => acc + cur) / 7
-    
-    console.log(sevenDaysAve)
-    const Rt = sevenDaysAve / sum(arr);
-    console.log(Rt)
+          });
+      }
 
-    console.log(`      
-      ${metaData[1].date}時点<br>
-      カリフォルニア州<br>
-      実行再生産数: ${Math.round(Rt * 100) /100}<br>
-      新規感染者（7日間平均）：${Math.round(result[0])}</font></p>`)
-    // const pdate = document.getElementById("date");
-    // pdate.textContent = `${metaData[1].date}`
 
-    // const elem = document.getElementById("rt");
-    // elem.textContent = `${Math.round(Rt * 100) /100}`
 
+  async function getData(){
+    const response = await fetch(endpoint);
+    const json = await response.json();
+    for (let i = 0; i < 90; ++i){
+       date.push(json[i+1].date)
+    }
+    for (let i = 0; i < 120; ++i){
+       dailyNewCases.push(json[i].positiveIncrease)
+    }
+    sevenD();
+    calculateErr();
+    calculateRt();
+    paraG();
+  }
+  
+
+  function sevenD(){
+    for(let i = 0; i < 120; ++i){
+      sevenDaysAve.push(
+        (dailyNewCases.slice(i, i+7).reduce((acc, cur) => acc + cur)) / 7)
+    }
   }
 
+  function calculateErr(){
+    for(let i = 0; i < 120; ++i){
+      let sevenSlice = sevenDaysAve.slice(i);
+      const arr = [];
+      for(let i =0; i<14; ++i){
+          const x = sevenSlice[i+1] * cummulateError[i];
+          arr.push(x);
+      }
+    sumFourtenn.push(arr.reduce((acc, cur) => acc + cur))
+  }}
 
-
-  function displayRt(metaData){
-    console.log(fourteenDaysArray(metaData))
+  function calculateRt(){
+    for(let i = 0; i < 90; ++i){
+      Rt.push(Math.floor(sevenDaysAve[i]/sumFourtenn[i]*1000)/1000);
+    }
   }
 
-  window.addEventListener('DOMContentLoaded', displayRt)
-
+  async function paraG(){
+    document.getElementById('para').innerText =
+    ` ${date[0]}時点
+      カリフォルニア州
+      実行再生産数: ${Rt[0]}
+      新規感染者（7日間平均）：${Math.floor(sevenDaysAve[0]*10)/10}`
+  }
+    
+  
 
   </script>
   </body>
