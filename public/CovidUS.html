@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>COVID R US</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3"></script>
+  </head>
+  <body>
+    <a href="/index.html">カリフォルニア州グラフ</a>  <a href="/public/CovidJP.html">日本グラフ</a>
+    <p id="para"><font size="80px"></font></p>
+    <canvas id="myChart" width="400" height="200"></canvas>
+    <p><font size="5px">出所：<a href="https://api.covidtracking.com/v1/us/daily.json">https://api.covidtracking.com/v1/states/ca/daily.json</a><br>
+     ,<a href="https://covidtracking.com/data/api">https://covidtracking.com/data/api</a></font></p>
+
+
+    
+  <script>
+  const endpoint = 'https://api.covidtracking.com/v1/us/daily.json';
+
+  const date = [];
+  const dailyNewCases = [];
+  const sevenDaysAve = [];
+  const sumFourtenn = [];
+  const Rt = [];
+  const cummulateError = [
+    0.037, 0.138, 0.160, 0.142, 0.117, 0.094, 0.075, 0.059, 0.047, 0.038, 0.031, 0.025, 0.021, 0.017
+  ]
+
+  chartIt();
+
+
+
+  async function chartIt(){
+        const ctx = document.getElementById('myChart').getContext('2d');
+        const sevenRt = await getData();
+        const myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: date,
+                datasets: [{
+                    label: '実行再生産数（右軸）',
+                    data: Rt,
+                    fill:false,
+                    backgroundColor: 'rgba(255, 0, 0, 0.2)',
+                    borderColor: 'rgba(255, 0, 0, 1)',
+                    borderWidth: 1,
+                    yAxisID: "y-axis-2"
+                },{
+                    label: '新規感染者（7日間平均）(左軸）',
+                    data: sevenDaysAve,
+                    fill:false,
+                    backgroundColor: 'rgba(0, 0, 255, 0.2)',
+                    borderColor: 'rgba(0, 0, 255, 1)',
+                    borderWidth: 1,
+                    yAxisID: "y-axis-1"
+                }]
+            },
+            options: {
+              scales: {
+               xAxes: [{
+                ticks: {
+                    reverse: true
+                }
+               }],
+               yAxes: [{
+                id: "y-axis-1",
+                position: "left",
+                ticks: {
+                }
+               },{
+                id: "y-axis-2",
+                position: "right",
+                ticks: {
+                }
+               }]
+              }
+            }
+          });
+      }
+
+
+
+  async function getData(){
+    const response = await fetch(endpoint);
+    const json = await response.json();
+    for (let i = 0; i <180; ++i){
+       date.push(json[i+1].date)
+    }
+    for (let i = 0; i <200; ++i){
+       dailyNewCases.push(json[i].positiveIncrease)
+    }
+    sevenD();
+    calculateErr();
+    calculateRt();
+    paraG();
+  }
+  
+
+  function sevenD(){
+    for(let i = 0; i < 200; ++i){
+      sevenDaysAve.push(
+        (dailyNewCases.slice(i, i+7).reduce((acc, cur) => acc + cur)) / 7)
+    }
+  }
+
+  function calculateErr(){
+    for(let i = 0; i < 200; ++i){
+      let sevenSlice = sevenDaysAve.slice(i);
+      const arr = [];
+      for(let i =0; i<14; ++i){
+          const x = sevenSlice[i+1] * cummulateError[i];
+          arr.push(x);
+      }
+    sumFourtenn.push(arr.reduce((acc, cur) => acc + cur))
+  }}
+
+  function calculateRt(){
+    for(let i = 0; i <180; ++i){
+      Rt.push(Math.floor(sevenDaysAve[i]/sumFourtenn[i]*1000)/1000);
+    }
+  }
+
+  async function paraG(){
+    document.getElementById('para').innerText =
+    ` ${date[0]}時点
+      全米
+      実行再生産数: ${Rt[0]}
+      新規感染者（7日間平均）：${Math.floor(sevenDaysAve[0]*10)/10}`
+  }
+    
+  
+
+  </script>
+  </body>
+  </html>
