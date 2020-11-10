@@ -4,16 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>COVID Rt</title>
+    <title>COVID R CA</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3"></script>
   </head>
   <body>
-
-    <p id=para><font size="80px"></font></p>
-    <canvas id="myChart" width="400" height="200"></canvas>
-    <p><font size="5px">出所：<a href='https://api.covidtracking.com/v1/states/ca/daily.json'>https://api.covidtracking.com/v1/states/ca/daily.json</href><br>
-     ,<a href='https://covidtracking.com/data/api'>https://covidtracking.com/data/api</href></font></p>
-
+    <a href="/index.html">カリフォルニア州グラフ</a>  <a href="/public/CovidUS.html">全米グラフ</a>
+    <p id="para"><font size="80px"></font></p>
+    <canvas id="myChartCA" width="400" height="200"></canvas>
+    <p><font size="5px">出所：<a href="https://api.covidtracking.com/v1/states/ca/daily.json">https://api.covidtracking.com/v1/states/ca/daily.json</a><br>
+     ,<a href="https://covidtracking.com/data/api">https://covidtracking.com/data/api</a></font></p>
 
 
     
@@ -34,9 +33,9 @@
 
 
   async function chartIt(){
-        const ctx = document.getElementById('myChart').getContext('2d');
+        const ctx = document.getElementById('myChartCA').getContext('2d');
         const sevenRt = await getData();
-        const myChart = new Chart(ctx, {
+        const myChartCA = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: date,
@@ -69,12 +68,13 @@
                 id: "y-axis-1",
                 position: "left",
                 ticks: {
-                min: 0,
+
                 }
                },{
                 id: "y-axis-2",
                 position: "right",
                 ticks: {
+
                 }
                }]
               }
