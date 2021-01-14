@@ -11,7 +11,7 @@
     <a href="/index.html">カリフォルニア州グラフ</a>  <a href="/public/CovidUS.html">全米グラフ</a>
     <p id="para"><font size="80px"></font></p>
     <canvas id="myChartCA" width="400" height="200"></canvas>
-    <p><font size="5px">出所：<a href="https://data.corona.go.jp/converted-json/covid19japan-npatients.json">https://data.corona.go.jp/converted-json/covid19japan-npatients.json</a><br>
+    <p><font size="1px">出所：<a href="https://data.corona.go.jp/converted-json/covid19japan-npatients.json">https://data.corona.go.jp/converted-json/covid19japan-npatients.json</a><br>
      ,<a href="https://corona.go.jp/dashboard/">内閣官房</a></font></p>
 
 
@@ -131,12 +131,16 @@
     }
   }
 
+  function numberWithCommas(x) {
+    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+
   async function paraG(){
     document.getElementById('para').innerText =
     ` ${dateR[0]}時点  
       日本  
       実行再生産数: ${Rt[0]}  
-      新規感染者（7日間平均）：${Math.floor(sevenDaysAve[0]*10)/10}`
+      新規感染者（7日間平均）：${numberWithCommas((Math.floor(sevenDaysAve[0]*10)/10).toFixed(0))}`
   }
     
   
