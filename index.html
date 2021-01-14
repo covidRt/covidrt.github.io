@@ -11,22 +11,32 @@
     <a href="/public/CovidJP.html">日本グラフ</a>  <a href="/public/CovidUS.html">全米グラフ</a>
     <p id="para"><font size="80px"></font></p>
     <canvas id="myChartCA" width="400" height="200"></canvas>
-    <p><font size="5px">出所：<a href="https://api.covidtracking.com/v1/states/ca/daily.json">https://api.covidtracking.com/v1/states/ca/daily.json</a><br>
-     ,<a href="https://covidtracking.com/data/api">https://covidtracking.com/data/api</a></font></p>
+    <p><font size="1px">出所：感染者数 <a href="https://api.covidtracking.com/v1/states/ca/daily.json">https://api.covidtracking.com/v1/states/ca/daily.json</a>
+     ,<a href="https://covidtracking.com/data/api">https://covidtracking.com/data/api</a><br>
+      ワクチン <a href="https://data.cdc.gov/api/views/b7pe-5nws/rows.json?accessType=DOWNLOAD">CDC Moderna</a>
+      <a href="https://data.cdc.gov/api/views/saz5-9hgg/rows.json?accessType=DOWNLOAD">CDC Pfizer</a></font></p>
 
 
     
   <script>
   const endpoint = 'https://api.covidtracking.com/v1/states/ca/daily.json';
+  const endpointVaccineM = 'https://data.cdc.gov/api/views/b7pe-5nws/rows.json?accessType=DOWNLOAD'
+  const endpointVaccineP = 'https://data.cdc.gov/api/views/saz5-9hgg/rows.json?accessType=DOWNLOAD'
 
   const date = [];
   const dailyNewCases = [];
+  const positiveCasesViralRate = [];
   const sevenDaysAve = [];
   const sumFourtenn = [];
   const Rt = [];
   const cummulateError = [
     0.037, 0.138, 0.160, 0.142, 0.117, 0.094, 0.075, 0.059, 0.047, 0.038, 0.031, 0.025, 0.021, 0.017
   ]
+  usVacAlloAccum = [];
+  caVacAlloAccum = [];
+  week = [];
+  caPopulation = 39512223;
+  usPopulation = 330806153;
 
   chartIt();
 
@@ -35,13 +45,16 @@
   async function chartIt(){
         const ctx = document.getElementById('myChartCA').getContext('2d');
         const sevenRt = await getData();
+        const vaccine = await getVaccineData();
+        const dom = await paraG();
         const myChartCA = new Chart(ctx, {
-            type: 'line',
+            type: 'bar',
             data: {
                 labels: date,
                 datasets: [{
                     label: '実行再生産数（右軸）',
                     data: Rt,
+                    type: 'line',
                     fill:false,
                     backgroundColor: 'rgba(255, 99, 132, 0.2)',
                     borderColor: 'rgba(255, 99, 132, 1)',
@@ -50,16 +63,32 @@
                 },{
                     label: '新規感染者（7日間平均）(左軸）',
                     data: sevenDaysAve,
+                    type: 'line',
                     fill:false,
                     backgroundColor: 'rgba(54, 162, 235, 0.2)',
                     borderColor: 'rgba(54, 162, 235, 1)',
                     borderWidth: 1,
                     yAxisID: "y-axis-1"
+                },{
+                    label: 'ワクチン接種率(右軸%）',
+                    data: caVacAlloAccum,
+                    backgroundColor: 'rgba(255, 51, 0, 1)',
+                    borderColor: 'rgba(255, 51, 0, 1)',
+                    borderWidth: 1,
+                    yAxisID: "y-axis-3"
+                },{
+                    label: '累計感染者率(右軸%）',
+                    data: positiveCasesViralRate,
+                    backgroundColor: 'rgba(0, 0, 255, 1)',
+                    borderColor: 'rgba(0, 0, 255, 1)',
+                    borderWidth: 1,
+                    yAxisID: "y-axis-3"
                 }]
             },
             options: {
               scales: {
                xAxes: [{
+                stacked: true,
                 ticks: {
                     reverse: true
                 }
@@ -76,6 +105,18 @@
                 ticks: {
 
                 }
+               },{
+                id: "y-axis-3",
+                position: "right",
+                stacked: true,
+                ticks: {
+                  max: 100,
+                  min: 0,
+                  stepSize: 5,
+                  callback: function(value, index, values) {
+                                return value + '%';
+                  }
+                }
                }]
               }
             }
@@ -87,28 +128,106 @@
   async function getData(){
     const response = await fetch(endpoint);
     const json = await response.json();
-    for (let i = 0; i <180; ++i){
+    for (let i = 0; i <135; ++i){
        date.push(json[i+1].date)
     }
-    for (let i = 0; i <200; ++i){
+    for (let i = 0; i <150; ++i){
        dailyNewCases.push(json[i].positiveIncrease)
+    }
+    for (let i = 0; i <150; ++i){
+      positiveCasesViralRate.push(parseFloat(json[i].positiveCasesViral / caPopulation * 100).toFixed(1))
     }
     sevenD();
     calculateErr();
     calculateRt();
-    paraG();
+  }
+
+  async function getVaccineData(){
+    ///Moderna
+    const responseM = await fetch(endpointVaccineM);
+    const jsonM = await responseM.json();
+    caM = jsonM['data'][51];
+    usM = jsonM['data'][65];
+    caVacAlloM = [0];
+    usVacAlloM = [0];
+    for (let i = 11; i < caM.length -2; i = i+2){
+      caVacAlloM.push(parseInt(caM[i].replace(/,/g, '')))
+    }
+    for (let i = 11; i < caM.length -2; i = i+2){
+      usVacAlloM.push(parseInt(usM[i].replace(/,/g, '')))
+    }
+
+    ///Pfizer
+    const responseP = await fetch(endpointVaccineP);
+    const jsonP = await responseP.json();
+    caP = jsonP['data'][51];
+    usP = jsonP['data'][65];
+    caVacAlloP = [];
+    usVacAlloP = [];
+    for (let i = 11; i < caP.length -2; i = i+2){
+      caVacAlloP.push(parseInt(caP[i].replace(/,/g, '')/2))
+    }
+    for (let i = 11; i < caP.length -2; i = i+2){
+      usVacAlloP.push(parseInt(usP[i].replace(/,/g, '')/2))
+    }
+
+    ///week 
+    metaWeekP = [];
+    metaP = jsonP['meta']['view']['columns'];
+    for (let i = 10; i < metaP.length -2; i = i+2){
+      metaWeekP.push(metaP[i]['name'].substr(-5).replace("/",""))
+    }
+    for (let i = 0; i < 2; ++i){
+      week.push(parseInt("2020" + metaWeekP[i]))
+    }
+    for (let i = 2; i < metaWeekP.length; ++i){
+      week.push(parseInt("2021" + metaWeekP[i]))
+    }
+
+    ///Moderna + Pfizer accumulate
+    caAllocationMP = [];
+    usAllocationMP = [];
+    caAllocationAccumMP = [];
+    usAllocationAccumMP = [];
+    for (let i = 0; i < caVacAlloP.length; ++i){
+      caAllocationMP.push(caVacAlloM[i] + caVacAlloP[i])
+    }
+    for (let i = 0; i < usVacAlloP.length; ++i){
+      usAllocationMP.push(usVacAlloM[i] + usVacAlloP[i])
+    }
+
+    caAllocationAccumMP.push(caAllocationMP[0])
+    for (let i = 1; i < caAllocationMP.length; ++i){
+        caAllocationAccumMP.push(caAllocationAccumMP[i-1] + caAllocationMP[i])
+    }
+
+    // convert and reverse weekly to date data
+    caAllocationAccumDaily = [];
+    usAllocationAccumDaily = [];
+    for (let i = 0; i < caAllocationMP.length - 1; ++i){
+      for (let n = 0; n < 7; ++n){
+        caAllocationAccumDaily.push(caAllocationAccumMP[i])
+      }
+    }
+    // const caDateTime = new Date().toLocaleString({ timeZone: 'America/Los_Angeles' });
+    const yyyymmdd = new Date().toISOString().substring(0, 10).replace(/-/g,'');
+    for (let n = 0; n < yyyymmdd - week[week.length -1]; ++n){
+      caAllocationAccumDaily.push(caAllocationAccumMP[caAllocationAccumMP.length - 1])
+    }
+
+    caVacAlloAccum = caAllocationAccumDaily.reverse().map(num => parseFloat(num / caPopulation * 100).toFixed(1));
   }
   
 
   function sevenD(){
-    for(let i = 0; i < 200; ++i){
+    for(let i = 0; i < 150; ++i){
       sevenDaysAve.push(
         (dailyNewCases.slice(i, i+7).reduce((acc, cur) => acc + cur)) / 7)
     }
   }
 
   function calculateErr(){
-    for(let i = 0; i < 200; ++i){
+    for(let i = 0; i < 150; ++i){
       let sevenSlice = sevenDaysAve.slice(i);
       const arr = [];
       for(let i =0; i<14; ++i){
@@ -119,17 +238,23 @@
   }}
 
   function calculateRt(){
-    for(let i = 0; i <180; ++i){
+    for(let i = 0; i <135; ++i){
       Rt.push(Math.floor(sevenDaysAve[i]/sumFourtenn[i]*1000)/1000);
     }
+  }
+
+  function numberWithCommas(x) {
+    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   }
 
   async function paraG(){
     document.getElementById('para').innerText =
     ` ${date[0]}時点
       カリフォルニア州
+      新規感染者（7日間平均）：${numberWithCommas((Math.floor(sevenDaysAve[0]*10)/10).toFixed(0))}
       実行再生産数: ${Rt[0]}
-      新規感染者（7日間平均）：${Math.floor(sevenDaysAve[0]*10)/10}`
+      ワクチン接種率: ${caVacAlloAccum[0]}%
+      累計感染者率: ${positiveCasesViralRate[0]}%`
   }
     
   
